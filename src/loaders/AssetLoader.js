@@ -25,9 +25,17 @@ const ABSOLUTE_LOCAL_PATH = /(^|\/)[A-Za-z]:[\\/]|^\\\\/;
 export class AssetLoader {
   constructor() {
     this.manager = new LoadingManager();
-    this.manager.setURLModifier((url) =>
-      ABSOLUTE_LOCAL_PATH.test(url) ? PLACEHOLDER_TEXTURE_URL : url
-    );
+    this.manager.setURLModifier((url) => {
+      if (ABSOLUTE_LOCAL_PATH.test(url)) return PLACEHOLDER_TEXTURE_URL;
+      
+      // دمج مسار الأساس تلقائياً لضمان عدم حدوث أخطاء 404 على مسارات المستودعات الفرعية
+      if (!url.startsWith('http') && !url.startsWith('data:')) {
+        const cleanBase = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL : import.meta.env.BASE_URL + '/';
+        const cleanUrl = url.startsWith('/') ? url.slice(1) : url;
+        return cleanBase + cleanUrl;
+      }
+      return url;
+    });
 
     this.fbx = new FBXLoader(this.manager);
     this.hdr = new HDRLoader(this.manager);
